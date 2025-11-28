@@ -1,6 +1,23 @@
 // frontend/supabase.js
-// Конфигурация Supabase
-const SUPABASE_URL = 'https://ryfzkqcijklmehxxtgtd.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5ZnprcWNpamtsbWVoeHh0Z3RkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMjEyNTUsImV4cCI6MjA3ODg5NzI1NX0.YaLDvrdnxicdew9FiPl5THOWxrX5smtA6qgVAAighvE';
+// Конфигурация Supabase с обработкой ошибок
+const SUPABASE_URL = 'https://your-project.supabase.co';
+const SUPABASE_ANON_KEY = 'your-anon-key';
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let supabase;
+
+try {
+    supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+            persistSession: false
+        }
+    });
+} catch (error) {
+    console.error('Error initializing Supabase:', error);
+    // Fallback к localStorage
+    supabase = {
+        from: () => ({
+            select: () => Promise.resolve({ data: [], error: null }),
+            upsert: () => Promise.resolve({ error: null })
+        })
+    };
+}
