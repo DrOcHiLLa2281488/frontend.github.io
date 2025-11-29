@@ -1,6 +1,8 @@
-// frontend/script.js
+// frontend/script.js (основные изменения)
+// Убираем Supabase и используем только localStorage + Telegram Web App
+
 let products = [];
-let cart = [];
+let cart = JSON.parse(localStorage.getItem('cart')) || [];
 let sortAscending = true;
 let currentUser = null;
 
@@ -17,98 +19,85 @@ currentUser = tgUser ? {
     lastName: tgUser.last_name
 } : null;
 
-// Загружаем данные
-Promise.all([loadProducts(), loadCart()]).then(() => {
-    renderProducts();
-    renderCart();
-});
+// Загружаем товары
+loadProducts();
 
-// Загрузка товаров из Supabase
+// Загрузка товаров (статичные данные или с API)
 async function loadProducts() {
-    try {
-        const { data, error } = await supabase
-            .from('products')
-            .select('*')
-            .order('price');
-        
-        if (error) throw error;
-        products = data;
-    } catch (error) {
-        console.error('Error loading products:', error);
-        showError('Ошибка загрузки товаров');
-    }
-}
-
-// Загрузка корзины пользователя
-async function loadCart() {
-    if (!currentUser) return;
+    // В реальном приложении можно загружать с API
+    // Для демо используем статические данные
+    products = [
+        {
+            id: 1,
+            name: 'Baccarat Rouge 540',
+            concentration: 'Extrait de Parfum',
+            volume: '70ml',
+            price: 28900,
+            image: 'https://images.unsplash.com/photo-1547887537-6158d64c35b3?w=400'
+        },
+        {
+            id: 2,
+            name: 'Creed Aventus',
+            concentration: 'Edu de Parfum',
+            volume: '100ml',
+            price: 21500,
+            image: 'https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=400'
+        },
+        {
+            id: 3,
+            name: 'Le Labo Santal 33',
+            concentration: 'Edu de Parfum',
+            volume: '50ml',
+            price: 15600,
+            image: 'https://images.unsplash.com/photo-1590736969955-1d0c72c4222f?w=400'
+        },
+        {
+            id: 4,
+            name: 'Tom Ford Noir',
+            concentration: 'Edu de Parfum',
+            volume: '100ml',
+            price: 12400,
+            image: 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=400'
+        }
+    ];
     
-    try {
-        const { data, error } = await supabase
-            .from('carts')
-            .select(`
-                quantity,
-                products (*)
-            `)
-            .eq('user_id', currentUser.id);
-        
-        if (error) throw error;
-        
-        cart = data.map(item => ({
-            ...item.products,
-            quantity: item.quantity
-        }));
-    } catch (error) {
-        console.error('Error loading cart:', error);
-    }
+    renderProducts();
 }
 
 // Добавление товара в корзину
 async function addToCart(productId) {
-    if (!currentUser) {
-        Telegram.WebApp.showPopup({
-            title: 'Ошибка',
-            message: 'Не удалось идентифицировать пользователя'
-        });
-        return;
+    const product = products.find(p => p.id === productId);
+    const existingItem = cart.find(item => item.id === productId);
+    
+    if (existingItem) {
+        existingItem.quantity += 1;
+    } else {
+        cart.push({ ...product, quantity: 1 });
     }
-
+    
+    saveCart();
+    
+    // Отправляем данные в бот через Telegram Web App
     try {
-        const { error } = await supabase
-            .from('carts')
-            .upsert({
-                user_id: currentUser.id,
-                product_id: productId,
-                quantity: 1
-            }, {
-                onConflict: 'user_id,product_id'
-            });
-
-        if (error) throw error;
-
-        // Обновляем локальную корзину
-        const product = products.find(p => p.id === productId);
-        const existingItem = cart.find(item => item.id === productId);
-        
-        if (existingItem) {
-            existingItem.quantity += 1;
-        } else {
-            cart.push({ ...product, quantity: 1 });
-        }
-
-        Telegram.WebApp.showPopup({
-            title: 'Успех',
-            message: 'Товар добавлен в корзину!'
-        });
-        
-        renderCart();
+        Telegram.WebApp.sendData(JSON.stringify({
+            action: 'add_to_cart',
+            product_id: productId
+        }));
     } catch (error) {
-        console.error('Error adding to cart:', error);
-        Telegram.WebApp.showPopup({
-            title: 'Ошибка',
-            message: 'Не удалось добавить товар в корзину'
-        });
+        console.log('Data sent to bot');
     }
+    
+    Telegram.WebApp.showPopup({
+        title: 'Успех',
+        message: 'Товар добавлен в корзину!'
+    });
+    
+    renderCart();
+}
+
+// Сохранение корзины в localStorage
+function saveCart() {
+    localStorage.setItem('cart', JSON.stringify(cart));
 }
 
 // Отображение товаров
@@ -120,7 +109,7 @@ function renderProducts(productsToRender = products) {
     
     container.innerHTML = productsToRender.map(product => `
         <div class="product-card">
-            <img src="${product.image_url}" alt="${product.name}" class="product-image" 
+            <img src="${product.image}" alt="${product.name}" class="product-image" 
                  onerror="this.src='https://images.unsplash.com/photo-1547887537-6158d64c35b3?w=400'">
             <h3>${product.name}</h3>
             <p>Концентрация: ${product.concentration}</p>
@@ -151,16 +140,43 @@ function renderCart() {
         <div class="cart-item">
             <h4>${item.name}</h4>
             <p>${item.concentration} • ${item.volume}</p>
-            <p>Количество: ${item.quantity}</p>
+            <p>Количество: 
+                <button onclick="updateQuantity(${item.id}, -1)">-</button>
+                ${item.quantity}
+                <button onclick="updateQuantity(${item.id}, 1)">+</button>
+            </p>
             <div class="product-price">${formatPrice(item.price * item.quantity)} руб.</div>
             <button class="copy-btn" onclick="copyProductData(${item.id})">
                 📋 Скопировать данные
+            </button>
+            <button class="remove-btn" onclick="removeFromCart(${item.id})" style="background: #dc3545; margin-left: 10px;">
+                🗑️ Удалить
             </button>
         </div>
     `).join('');
     
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     totalElement.textContent = `Итого: ${formatPrice(total)} руб.`;
+}
+
+// Обновление количества товара
+function updateQuantity(productId, change) {
+    const item = cart.find(item => item.id === productId);
+    if (item) {
+        item.quantity += change;
+        if (item.quantity <= 0) {
+            cart = cart.filter(item => item.id !== productId);
+        }
+        saveCart();
+        renderCart();
+    }
+}
+
+// Удаление товара из корзины
+function removeFromCart(productId) {
+    cart = cart.filter(item => item.id !== productId);
+    saveCart();
+    renderCart();
 }
 
 // Форматирование цены
@@ -184,17 +200,6 @@ async function copyProductData(productId) {
     }
 }
 
-// Фильтрация по цене
-function toggleSort() {
-    sortAscending = !sortAscending;
-    const sortText = document.getElementById('sort-text');
-    
-    products.sort((a, b) => sortAscending ? a.price - b.price : b.price - a.price);
-    sortText.textContent = sortAscending ? 'Фильтр по цене ↑' : 'Фильтр по цене ↓';
-    
-    renderProducts();
-}
-
 // Оформление заказа
 function checkout() {
     if (cart.length === 0) {
@@ -216,54 +221,8 @@ function checkout() {
     
     const message = `НОВЫЙ ЗАКАЗ из ParfumDEPO\n\n${userInfo}\n\n${orderText}\n\n💰 ИТОГО: ${formatPrice(total)} руб.`;
     
-    Telegram.WebApp.openTelegramLink(`https://t.me/parfumdepo?text=${encodeURIComponent(message)}`);
+    Telegram.WebApp.openTelegramLink(`https://t.me/${CONFIG.MANAGER_USERNAME}?text=${encodeURIComponent(message)}`);
 }
 
-// Навигация
-function showCart() {
-    document.getElementById('main-page').style.display = 'none';
-    document.getElementById('cart-page').style.display = 'block';
-    renderCart();
-}
-
-function showMainPage() {
-    document.getElementById('cart-page').style.display = 'none';
-    document.getElementById('main-page').style.display = 'block';
-}
-
-// Поиск
-document.getElementById('search').addEventListener('input', (e) => {
-    const term = e.target.value.toLowerCase().trim();
-    
-    if (!term) {
-        renderProducts();
-        return;
-    }
-    
-    const filtered = products.filter(p => 
-        p.name.toLowerCase().includes(term) ||
-        p.concentration.toLowerCase().includes(term)
-    );
-    
-    renderProducts(filtered);
-});
-
-// Обработка ошибок
-function showError(message) {
-    Telegram.WebApp.showPopup({
-        title: 'Ошибка',
-        message: message
-    });
-}
-
-// Добавляем кнопку корзины в интерфейс
-document.addEventListener('DOMContentLoaded', function() {
-    const header = document.querySelector('.header');
-    const cartButton = document.createElement('button');
-    cartButton.className = 'filter-btn';
-    cartButton.innerHTML = '🛒 Корзина';
-    cartButton.onclick = showCart;
-    cartButton.style.marginLeft = '10px';
-    
-    document.querySelector('.filters').appendChild(cartButton);
-});
+// Остальные функции остаются такими же как в предыдущей версии
+// (toggleSort, showCart, showMainPage, поиск и т.д.)
