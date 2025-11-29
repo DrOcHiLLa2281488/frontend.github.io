@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ParfumDEPO</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 16px;
+            background: #f5f5f5;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .search {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .filter-btn {
+            width: 100%;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .product-card {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .add-to-cart {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            margin-top: 8px;
+        }
+        .page {
+            display: none;
+        }
+        .active {
+            display: block;
+        }
+        .cart-item {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .copy-btn {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+        .order-btn {
+            width: 100%;
+            padding: 12px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+        .nav {
+            display: flex;
+            justify-content: space-around;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="main-page" class="page active">
+        <div class="header">
+            <h1>ParfumDEPO</h1>
+        </div>
+        <input type="text" class="search" placeholder="Поиск парфюма..." id="search-input">
+        <button class="filter-btn" onclick="toggleSort()">Сортировка по цене ↑↓</button>
+        <div id="products-container"></div>
+    </div>
+
+    <div id="cart-page" class="page">
+        <div class="header">
+            <h2>Корзина</h2>
+        </div>
+        <div id="cart-container"></div>
+        <button class="order-btn" onclick="processOrder()">Оформить заказ у менеджера</button>
+    </div>
+
+    <div class="nav">
+        <button onclick="showPage('main-page')">Магазин</button>
+        <button onclick="showPage('cart-page')">Корзина</button>
+    </div>
+
+    <script>
+        let products = [];
+        let cart = [];
+        let sortAscending = true;
+
+        // Инициализация
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+        loadCart();
+        loadProducts();
+
+        function loadProducts() {
+            // В реальном приложении загружаем с сервера
+            products = [
+                {
+                    id: 1,
+                    name: "Baccarat Rouge 540",
+                    concentration: "Extrait de Parfum",
+                    volume: 100,
+                    price: 299,
+                    image: "https://example.com/image1.jpg"
+                },
+                {
+                    id: 2,
+                    name: "Coco Mademoiselle",
+                    concentration: "Eau de Parfum",
+                    volume: 50,
+                    price: 156,
+                    image: "https://example.com/image2.jpg"
+                }
+            ];
+            renderProducts(products);
+        }
+
+        function renderProducts(productsToRender) {
+            const container = document.getElementById('products-container');
+            container.innerHTML = '';
+            
+            productsToRender.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+                productCard.innerHTML = `
+                    <h3>${product.name}</h3>
+                    <p>Концентрация: ${product.concentration}</p>
+                    <p>Объем: ${product.volume} мл</p>
+                    <p>Цена: $${product.price}</p>
+                    <button class="add-to-cart" onclick="addToCart(${product.id})">
+                        В корзину
+                    </button>
+                `;
+                container.appendChild(productCard);
+            });
+        }
+
+        function toggleSort() {
+            const sortedProducts = [...products].sort((a, b) => 
+                sortAscending ? a.price - b.price : b.price - a.price
+            );
+            sortAscending = !sortAscending;
+            renderProducts(sortedProducts);
+        }
+
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            cart.push(product);
+            saveCart();
+            Telegram.WebApp.showPopup({message: 'Товар добавлен в корзину'});
+        }
+
+        function loadCart() {
+            const savedCart = localStorage.getItem('parfumCart');
+            if (savedCart) {
+                cart = JSON.parse(savedCart);
+            }
+        }
+
+        function saveCart() {
+            localStorage.setItem('parfumCart', JSON.stringify(cart));
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+            
+            if (pageId === 'cart-page') {
+                renderCart();
+            }
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-container');
+            container.innerHTML = '';
+            
+            cart.forEach(item => {
+                const cartItem = document.createElement('div');
+                cartItem.className = 'cart-item';
+                cartItem.innerHTML = `
+                    <h4>${item.name}</h4>
+                    <p>${item.concentration} ${item.volume} мл</p>
+                    <p>$${item.price}</p>
+                    <button class="copy-btn" onclick="copyProductData(${item.id})">
+                        Скопировать данные
+                    </button>
+                `;
+                container.appendChild(cartItem);
+            });
+        }
+
+        function copyProductData(productId) {
+            const product = cart.find(p => p.id === productId);
+            const text = `${product.name} ${product.concentration} ${product.volume}ml - $${product.price}`;
+            navigator.clipboard.writeText(text);
+            Telegram.WebApp.showPopup({message: 'Данные скопированы!'});
+        }
+
+        function processOrder() {
+            const orderText = generateOrderText();
+            Telegram.WebApp.openTelegramLink(`https://t.me/parfumdepo?text=${encodeURIComponent(orderText)}`);
+        }
+
+        function generateOrderText() {
+            let text = "Заказ из ParfumDEPO:\n";
+            cart.forEach(item => {
+                text += `- ${item.name} ${item.concentration} ${item.volume}ml - $${item.price}\n`;
+            });
+            text += `\nИтого: $${cart.reduce((sum, item) => sum + item.price, 0)}`;
+            return text;
+        }
+
+        // Поиск
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredProducts = products.filter(product => 
+                product.name.toLowerCase().includes(searchTerm)
+            );
+            renderProducts(filteredProducts);
+        });
+    </script>
+</body>
+</html>
