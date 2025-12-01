@@ -6,55 +6,195 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Магазин парфюмерии</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
-  h1 { margin-bottom: 10px; }
-  #search { margin-bottom: 15px; padding: 8px; width: 100%; max-width: 400px; }
-  .product-list, .cart-list { display: flex; flex-wrap: wrap; gap: 15px; }
-  .product, .cart-item {
-    background: #fff; border: 1px solid #ddd; border-radius: 6px;
-    padding: 10px; width: 200px; box-sizing: border-box;
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background: #f0f4f8;
+    color: #333;
   }
-  .product img { width: 100%; height: 150px; object-fit: cover; border-radius: 4px; }
-  .product button, #checkout-btn {
-    background-color: #0066cc; color: white; border: none;
-    padding: 8px 12px; cursor: pointer; margin-top: 8px; border-radius: 4px;
+  h1 {
+    margin-bottom: 15px;
   }
-  .product button:hover, #checkout-btn:hover { background-color: #004d99; }
-  #cart {
-    margin-top: 30px;
-    background: #fff; padding: 15px; border-radius: 6px; border: 1px solid #ccc;
-    max-width: 450px;
-  }
-  #cart h2 { margin-top: 0; }
-  .cart-item {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 8px;
-  }
-  .cart-item span { flex: 1; }
-  .cart-item button {
-    background: #cc0000; border: none; color: #fff; border-radius: 4px;
-    padding: 2px 6px; cursor: pointer;
-  }
-  .cart-item button:hover { background: #990000; }
-  #order-form {
-    margin-top: 20px;
-    padding: 15px;
-    background: #eef6ff;
+  #search {
+    padding: 10px;
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid #bbb;
     border-radius: 6px;
-    max-width: 450px;
+    margin-bottom: 20px;
+    font-size: 16px;
   }
-  #order-form label { display: block; margin-top: 10px; }
+  .product-list, .cart-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .product {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    width: 220px;
+    padding: 15px;
+    box-sizing: border-box;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: box-shadow 0.3s ease;
+  }
+  .product:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+  }
+  .product img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 10px;
+  }
+  .product h3 {
+    font-size: 18px;
+    margin: 0 0 8px;
+  }
+  .product p {
+    font-weight: bold;
+    margin: 0 0 12px;
+    color: #0073e6;
+  }
+  .product button {
+    background-color: #0073e6;
+    color: white;
+    border: none;
+    padding: 9px 14px;
+    width: 100%;
+    font-size: 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  .product button:hover {
+    background-color: #005bb5;
+  }
+  #cart {
+    background: #fff;
+    margin-top: 40px;
+    max-width: 480px;
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+  #cart h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+  }
+  #cart-items {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+  }
+  .cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+  .cart-item span {
+    flex: 1 1 auto;
+  }
+  .cart-item button {
+    background: #d9534f;
+    border: none;
+    color: white;
+    border-radius: 5px;
+    padding: 4px 9px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-left: 5px;
+    transition: background-color 0.3s ease;
+  }
+  .cart-item button:hover {
+    background: #c12e2a;
+  }
+  .cart-controls button {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+    padding: 0;
+    margin-left: 5px;
+  }
+  #cart-total {
+    font-weight: 600;
+    font-size: 18px;
+    margin-bottom: 20px;
+    text-align: right;
+    color: #333;
+  }
+  #checkout-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    width: 100%;
+    padding: 12px;
+    font-size: 17px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  #checkout-btn:disabled {
+    background-color: #94d3a2;
+    cursor: default;
+  }
+  #checkout-btn:hover:not(:disabled) {
+    background-color: #1e7e34;
+  }
+  #order-form {
+    max-width: 480px;
+    background: #fff;
+    margin-top: 30px;
+    padding: 25px 25px 30px;
+    border-radius: 8px;
+    border: 1px solid #bbb;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: none;
+  }
+  #order-form h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+  }
+  #order-form label {
+    display: block;
+    margin-top: 15px;
+    font-weight: 600;
+  }
   #order-form input, #order-form textarea {
-    width: 100%; padding: 8px; box-sizing: border-box;
-    margin-top: 4px; border-radius: 4px; border: 1px solid #ccc;
+    margin-top: 6px;
+    padding: 10px;
+    width: 100%;
+    font-size: 15px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    font-family: inherit;
+    resize: vertical;
   }
   #order-form button {
-    margin-top: 15px; padding: 10px 15px; background: #0066cc;
-    color: white; border: none; border-radius: 4px; cursor: pointer;
+    margin-top: 24px;
+    width: 100%;
+    font-size: 17px;
+    background-color: #0073e6;
+    color: white;
+    border: none;
+    padding: 12px;
+    bor
+der-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
   }
-  #order-form button:hover { background: #004d99; }
+  #order-form button:hover {
+    background-color: #005bb5;
+  }
   #empty-msg {
-    color: #999; font-style: italic;
+    color: #666;
+    font-style: italic;
   }
 </style>
 </head>
@@ -62,32 +202,32 @@
 
 <h1>Магазин парфюмерии</h1>
 
-<input type="text" id="search" placeholder="Поиск парфюма..." />
+<input type="text" id="search" placeholder="Поиск по товарам..." autocomplete="off" />
 
 <div id="catalog" class="product-list"></div>
 
-<div id="cart">
+<section id="cart">
   <h2>Корзина</h2>
   <div id="cart-items"></div>
   <div id="cart-total"></div>
   <button id="checkout-btn" disabled>Оформить заказ</button>
-</div>
+</section>
 
-<form id="order-form" style="display:none;">
+<form id="order-form" novalidate>
   <h2>Оформление заказа</h2>
-  <label for="name">Имя <span style="color:red">*</span></label>
+  <label for="name">Имя<span style="color:red;"> *</span></label>
   <input type="text" id="name" required minlength="2" placeholder="Ваше имя" />
 
-  <label for="phone">Телефон <span style="color:red">*</span></label>
-  <input type="tel" id="phone" required pattern="^(\+?\d{7,15})$" placeholder="+7XXXXXXXXXX" />
-label for="address">Адрес доставки <span style="color:red">*</span></label>
-  <textarea id="address" required minlength="5" placeholder="Адрес доставки"></textarea>
+  <label for="phone">Телефон<span style="color:red;"> *</span></label>
+  <input type="tel" id="phone" required pattern="^\+?\d{7,15}$" placeholder="+7XXXXXXXXXX" />
+
+  <label for="address">Адрес доставки<span style="color:red;"> *</span></label>
+  <textarea id="address" rows="3" required minlength="5" placeholder="Улица, дом, квартира"></textarea>
 
   <button type="submit">Отправить заказ</button>
 </form>
 
 <script>
-  // Исходные данные товаров
   const products = [
     {
       id: 1,
@@ -121,7 +261,6 @@ label for="address">Адрес доставки <span style="color:red">*</span>
     }
   ];
 
-  // Локальное хранилище корзины
   let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
   const catalogEl = document.getElementById('catalog');
@@ -131,65 +270,87 @@ label for="address">Адрес доставки <span style="color:red">*</span>
   const checkoutBtn = document.getElementById('checkout-btn');
   const orderForm = document.getElementById('order-form');
 
-  // Отрисовка каталога с поиском
   function renderCatalog(filter = '') {
     catalogEl.innerHTML = '';
     const filtered = products.filter(p => p.name.toLowerCase().includes(filter.toLowerCase()));
     if (filtered.length === 0) {
-      catalogEl.innerHTML = '<p>Товары не найдены.</p>';
+      catalogEl.innerHTML = '<p id="empty-msg">Товары не найдены.</p>';
       return;
     }
-    filtered.forEach(p => {
-      const productDiv = document.createElement('div');
-      productDiv.className = 'product';
-      productDiv.innerHTML = `
-        <img src="${p.image}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/200x150?text=No+Image'" />
-        <h3>${p.name}</h3>
-        <p>Цена: ${p.price.toLocaleString('ru-RU')} ₽</p>
-        <button data-id="${p.id}">Добавить в корзину</button>
+    filtered.forEach(product => {
+      const div = document.createElement('div');
+      div.className = 'product';
+      div.innerHTML = `
+        <img src="${product.image}" alt="${product.name}" onerror="this.src='https://via.placeholder.com/220x150?text=Нет+изображения';" />
+        <h3>${product.name}</h3>
+        <p>${product.price.toLocaleString('ru-RU')} ₽</p>
+        <button data-id="${product.id}">Добавить в корзину</button>
       `;
-      catalogEl.appendChild(productDiv);
+      catalogEl.appendChild(div);
     });
-    // Назначаем обработчики кнопкам
-    catalogEl.querySelectorAll('button').forEach(btn => {
+
+    catalogEl.querySelectorAl
+l('button').forEach(btn => {
       btn.onclick = () => {
-        const id = +btn.getAttribute('data-id');
-        addToCart(id);
+        addToCart(+btn.dataset.id);
       };
     });
   }
 
-  // Добавление в корзину
+  function saveCart() {
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }
+
+  function renderCart() {
+    cartItemsEl.innerHTML = '';
+    if (cart.length === 0) {
+      cartItemsEl.innerHTML = '<p id="empty-msg">Корзина пуста.</p>';
+      cartTotalEl.textContent = '';
+      checkoutBtn.disabled = true;
+      return;
+    }
+
+    let total = 0;
+    cart.forEach(item => {
+      total += item.price * item.qty;
+      const itemEl = document.createElement('div');
+      itemEl.className = 'cart-item';
+
+      itemEl.innerHTML = `
+        <span>${item.name} x${item.qty} = ${(item.price * item.qty).toLocaleString('ru-RU')} ₽</span>
+        <div>
+          <button data-action="minus" data-id="${item.id}">−</button>
+          <button data-action="plus" data-id="${item.id}">+</button>
+          <button data-action="remove" data-id="${item.id}">×</button>
+        </div>
+      `;
+      cartItemsEl.appendChild(itemEl);
+    });
+    cartTotalEl.textContent = `Итого: ${total.toLocaleString('ru-RU')} ₽`;
+    checkoutBtn.disabled = false;
+  }
+
   function addToCart(id) {
     const product = products.find(p => p.id === id);
     if (!product) return;
-    const cartItem = cart.find(item => item.id === id);
-    if (cartItem) {
-      cartItem.qty++;
+    const item = cart.find(c => c.id === id);
+    if (item) {
+      item.qty++;
     } else {
       cart.push({ id: product.id, name: product.name, price: product.price, qty: 1 });
     }
     saveCart();
     renderCart();
-    checkoutBtn.disabled = false;
   }
 
-  // Сохранить корзину в localStorage
-  function saveCart() {
-    localStorage.setItem('cart', JSON.stringify(cart));
-  }
-
-  // Удалить товар из корзины
   function removeFromCart(id) {
     cart = cart.filter(item => item.id !== id);
     saveCart();
     renderCart();
-    if (cart.length === 0) checkoutBtn.disabled = true;
   }
 
-  // Изменить количество товара
   function changeQty(id, delta) {
-    const item = cart.find(item => item.id === id);
+    const item = cart.find(c => c.id === id);
     if (!item) return;
     item.qty += delta;
     if (item.qty < 1) {
@@ -200,74 +361,45 @@ label for="address">Адрес доставки <span style="color:red">*</span>
     renderCart();
   }
 
-  // Отрисовка корзи�
-�ы
-  function renderCart() {
-    cartItemsEl.innerHTML = '';
-    if (cart.length === 0) {
-      cartItemsEl.innerHTML = '<p id="empty-msg">Корзина пуста.</p>';
-      cartTotalEl.textContent = '';
-      checkoutBtn.disabled = true;
-      return;
-    }
-    let total = 0;
-    cart.forEach(item => {
-      total += item.price * item.qty;
-      const itemDiv = document.createElement('div');
-      itemDiv.className = 'cart-item';
-      itemDiv.innerHTML = `
-        <span>${item.name} x ${item.qty} = ${ (item.price * item.qty).toLocaleString('ru-RU')} ₽</span>
-        <div>
-          <button data-action="minus" data-id="${item.id}">−</button>
-          <button data-action="plus" data-id="${item.id}">+</button>
-          <button data-action="remove" data-id="${item.id}">×</button>
-        </div>
-      `;
-      cartItemsEl.appendChild(itemDiv);
-    });
-    cartTotalEl.textContent = `Итого: ${total.toLocaleString('ru-RU')} ₽`;
-  }
-
-  // Обработчики кнопок изменения количества в корзине
   cartItemsEl.onclick = (e) => {
     if (e.target.tagName !== 'BUTTON') return;
-    const id = +e.target.getAttribute('data-id');
-    const action = e.target.getAttribute('data-action');
-    if (action === 'plus') changeQty(id, +1);
-    else if (action === 'minus') changeQty(id, -1);
-    else if (action === 'remove') removeFromCart(id);
+    const id = +e.target.dataset.id;
+    const action = e.target.dataset.action;
+    if (action === 'plus') changeQty(id, 1);
+    if (action === 'minus') changeQty(id, -1);
+    if (action === 'remove') removeFromCart(id);
   };
 
-  // Обработка поиска
-  searchEl.oninput = () => {
+  searchEl.addEventListener('input', () => {
     renderCatalog(searchEl.value);
-  };
+  });
 
-  // Показ формы оформления заказа
   checkoutBtn.onclick = () => {
     orderForm.style.display = 'block';
-    window.scrollTo({ top: orderForm.offsetTop, behavior: 'smooth' });
+    orderForm.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Валидация и отправка заказа
-  orderForm.onsubmit = (e) => {
+  orderForm.addEventListener('submit', e => {
     e.preventDefault();
 
-    const name = document.getElementById('name').value.trim();
-    const phone = document.getElementById('phone').value.trim();
-    const address = document.getElementById('address').value.trim();
+    const name = orderForm.name.value.trim();
+    const phone = orderForm.phone.value.trim();
+    const address = orderForm.address.value.trim();
 
     if (name.length < 2) {
       alert('Введите корректное имя (не менее 2 символов).');
+      orderForm.name.focus();
       return;
     }
-    const phoneRe = /^\+?\d{7,15}$/;
-    if (!phoneRe.test(phone)) {
+    const phonePattern = /^\+?\d{7,15}$/;
+    if (!phonePattern.test(phone)) {
       alert('Введите корректный телефон в формате +7XXXXXXXXXX.');
+      orderForm.phone.focus();
       return;
     }
     if (address.length < 5) {
-      alert('Введите полный адрес доставки.');
+      alert('Введите полный адрес доставки (не менее 5 символов).');
+      orderForm.address.focus();
       return;
     }
     if (cart.length === 0) {
@@ -275,34 +407,32 @@ label for="address">Адрес доставки <span style="color:red">*</span>
       return;
     }
 
-    // Формируем текст заказа
-    let orderText = `Новый заказ:\n\nИмя: ${name}\nТелефон: ${phone}\nАдрес: ${address}\n\nТовары:\n`;
+    let orderText = `Новый заказ\n\nИмя: ${name}\nТелефон: ${phone}\nАдрес: ${address}\n\nТовары:\n`;
     cart.forEach(item => {
       orderText += ` - ${item.name} x${item.qty} = ${(item.price * item.qty).toLocaleString('ru-RU')} ₽\n`;
     });
-    let total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-    orderText += `\nИтого: ${total.toLocaleString('ru-RU')} ₽`;
+    const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+    orderText += `\nИтог
+о: ${total.toLocaleString('ru-RU')} ₽`;
 
-    // Здесь можно заменить alert на отправку на сервер или в мессенджер
     alert(orderText);
 
-    // Очистка корзины и формы после заказа
     cart = [];
     saveCart();
     renderCart();
     orderForm.reset();
     orderForm.style.display = 'none';
     checkoutBtn.disabled = true;
-  };
+  });
 
   // Инициализация
   renderCatalog();
   renderCart();
-
 </script>
 
 </body>
 </html>
+
 
 
 
