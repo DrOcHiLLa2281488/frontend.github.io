@@ -1,255 +1,217 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>ParfumDEPO</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            margin: 0;
-            padding: 16px;
-            background: #f5f5f5;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .search {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-        }
-        .filter-btn {
-            width: 100%;
-            padding: 12px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            margin-bottom: 16px;
-        }
-        .product-card {
-            background: white;
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .add-to-cart {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            margin-top: 8px;
-        }
-        .page {
-            display: none;
-        }
-        .active {
-            display: block;
-        }
-        .cart-item {
-            background: white;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-        }
-        .copy-btn {
-            background: #17a2b8;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            margin-top: 8px;
-        }
-        .order-btn {
-            width: 100%;
-            padding: 12px;
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            margin-top: 16px;
-        }
-        .nav {
-            display: flex;
-            justify-content: space-around;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            padding: 12px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>ParfumDEPO Miniapp</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 10px; max-width: 600px; margin: auto; }
+    h1 { text-align: center; }
+    input[type="text"] { width: 100%; padding: 8px; font-size: 16px; margin-bottom: 10px; }
+    button { padding: 8px 12px; margin: 5px 0; cursor: pointer; }
+    .product { border: 1px solid #ccc; padding: 10px; margin-bottom: 8px; display: flex; align-items: center; }
+    .product img { width: 80px; height: 80px; object-fit: cover; margin-right: 10px; }
+    .product-details { flex: 1; }
+    .product-name { font-weight: bold; font-size: 18px; }
+    .product-info { font-size: 14px; color: #555; }
+    .cart-btn { background-color: #28a745; color: white; border: none; }
+    .cart-btn:hover { background-color: #218838; }
+    #cartPage { display: none; }
+    .copy-btn { margin-left: 10px; }
+  </style>
 </head>
 <body>
-    <div id="main-page" class="page active">
-        <div class="header">
-            <h1>ParfumDEPO</h1>
+
+<div id="mainPage">
+  <h1>ParfumDEPO</h1>
+  <input type="text" id="searchInput" placeholder="Поиск по названию..." />
+  <button id="filterBtn">Фильтр: По цене ↑</button>
+  <div id="catalog"></div>
+  <button id="goToCartBtn" style="margin-top: 15px;">Перейти в корзину</button>
+</div>
+
+<div id="cartPage">
+  <h1>Корзина</h1>
+  <div id="cartList"></div>
+  <button id="orderBtn" style="margin-top: 15px;">Оформить заказ у менеджера</button>
+  <button id="backBtn" style="margin-top: 15px;">Назад в каталог</button>
+</div>
+
+<script>
+  // Пример каталога - можно дополнять
+  const products = [
+    {
+      id: 1,
+      name: "Dior Sauvage",
+      concentration: "EDT",
+      volume: "100ml",
+      price: 7500,
+      img: "https://cdn.scentbird.com/dior-sauvage-100ml.jpg"
+    },
+    {
+      id: 2,
+      name: "Chanel No 5",
+      concentration: "EDP",
+      volume: "50ml",
+      price: 8500,
+      img: "https://cdn.scentbird.com/chanel-no5-50ml.jpg"
+    },
+    {
+      id: 3,
+      name: "Versace Eros",
+      concentration: "EDT",
+      volume: "100ml",
+      price: 6800,
+      img: "https://cdn.scentbird.com/versace-eros-100ml.jpg"
+    },
+  ];
+
+  let filteredProducts = [...products];
+  let ascending = true; // флаг сортировки по цене
+  let cart = JSON.parse(localStorage.getItem("parfumdepo_cart")) || [];
+
+  // Отрисовка каталога
+  function renderCatalog() {
+    const catalogDiv = document.getElementById("catalog");
+    catalogDiv.innerHTML = "";
+    filteredProducts.forEach(product => {
+      const div = document.createElement("div");
+      div.className = "product";
+      div.innerHTML = `
+        <img src="${product.img}" alt="${product.name}" />
+        <div class="product-details">
+          <div class="product-name">${product.name}</div>
+          <div class="product-info">Концентрация: ${product.concentration}</div>
+          <div class="product-info">Объем: ${pro
+duct.volume}</div>
+          <div class="product-info">Цена: ${product.price} ₽</div>
         </div>
-        <input type="text" class="search" placeholder="Поиск парфюма..." id="search-input">
-        <button class="filter-btn" onclick="toggleSort()">Сортировка по цене ↑↓</button>
-        <div id="products-container"></div>
-    </div>
+        <button class="cart-btn" data-id="${product.id}">Добавить в корзину</button>
+      `;
+      catalogDiv.appendChild(div);
+    });
 
-    <div id="cart-page" class="page">
-        <div class="header">
-            <h2>Корзина</h2>
+    // Навешиваем обработчик на кнопки добавления в корзину
+    document.querySelectorAll(".cart-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = +btn.getAttribute("data-id");
+        addToCart(id);
+      });
+    });
+  }
+
+  // Функция добавления в корзину
+  function addToCart(productId) {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    // Проверяем есть ли уже в корзине (увеличиваем количество)
+    let item = cart.find(c => c.id === productId);
+    if (item) {
+      item.quantity++;
+    } else {
+      cart.push({...product, quantity: 1});
+    }
+    localStorage.setItem("parfumdepo_cart", JSON.stringify(cart));
+    alert(`Товар "${product.name}" добавлен в корзину`);
+  }
+
+  // Поиск
+  document.getElementById("searchInput").addEventListener("input", (e) => {
+    const val = e.target.value.toLowerCase();
+    filteredProducts = products.filter(p => p.name.toLowerCase().includes(val));
+    sortCatalog();
+    renderCatalog();
+  });
+
+  // Сортировка
+  function sortCatalog() {
+    filteredProducts.sort((a, b) => ascending ? a.price - b.price : b.price - a.price);
+  }
+
+  document.getElementById("filterBtn").addEventListener("click", () => {
+    ascending = !ascending;
+    document.getElementById("filterBtn").innerText = `Фильтр: По цене ${ascending ? "↑" : "↓"}`;
+    sortCatalog();
+    renderCatalog();
+  });
+
+  // Переход в корзину
+  document.getElementById("goToCartBtn").addEventListener("click", () => {
+    showCartPage();
+  });
+
+  // Показ корзины
+  function showCartPage() {
+    document.getElementById("mainPage").style.display = "none";
+    document.getElementById("cartPage").style.display = "block";
+    renderCart();
+  }
+
+  // Показ каталога
+  function showMainPage() {
+    document.getElementById("mainPage").style.display = "block";
+    document.getElementById("cartPage").style.display = "none";
+  }
+
+  // Отрисовка корзины
+  function renderCart() {
+    const cartList = document.getElementById("cartList");
+    cartList.innerHTML = "";
+    if (cart.length === 0) {
+      cartList.innerHTML = "<p>Корзина пуста</p>";
+      return;
+    }
+    cart.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "product";
+      div.innerHTML = `
+        <img src="${item.img}" alt="${item.name}" />
+        <div class="product-details">
+          <div class="product-name">${item.name}</div>
+          <div class="product-info">Концентрация: ${item.concentration}</div>
+          <div class="product-info">Объем: ${item.volume}</div>
+          <div class="product-info">Цена: ${item.price} ₽ x ${item.quantity} = ${item.price * item.quantity} ₽</div>
         </div>
-        <div id="cart-container"></div>
-        <button class="order-btn" onclick="processOrder()">Оформить заказ у менеджера</button>
-    </div>
+        <button class="copy-btn" data-id="${item.id}">Скопировать данные</button>
+      `;
+      cartList.appendChild
+(div);
+    });
 
-    <div class="nav">
-        <button onclick="showPage('main-page')">Магазин</button>
-        <button onclick="showPage('cart-page')">Корзина</button>
-    </div>
-
-    <script>
-        let products = [];
-        let cart = [];
-        let sortAscending = true;
-
-        // Инициализация
-        Telegram.WebApp.ready();
-        Telegram.WebApp.expand();
-        loadCart();
-        loadProducts();
-
-        function loadProducts() {
-            // В реальном приложении загружаем с сервера
-            products = [
-                {
-                    id: 1,
-                    name: "Baccarat Rouge 540",
-                    concentration: "Extrait de Parfum",
-                    volume: 100,
-                    price: 299,
-                    image: "https://example.com/image1.jpg"
-                },
-                {
-                    id: 2,
-                    name: "Coco Mademoiselle",
-                    concentration: "Eau de Parfum",
-                    volume: 50,
-                    price: 156,
-                    image: "https://example.com/image2.jpg"
-                }
-            ];
-            renderProducts(products);
-        }
-
-        function renderProducts(productsToRender) {
-            const container = document.getElementById('products-container');
-            container.innerHTML = '';
-            
-            productsToRender.forEach(product => {
-                const productCard = document.createElement('div');
-                productCard.className = 'product-card';
-                productCard.innerHTML = `
-                    <h3>${product.name}</h3>
-                    <p>Концентрация: ${product.concentration}</p>
-                    <p>Объем: ${product.volume} мл</p>
-                    <p>Цена: $${product.price}</p>
-                    <button class="add-to-cart" onclick="addToCart(${product.id})">
-                        В корзину
-                    </button>
-                `;
-                container.appendChild(productCard);
-            });
-        }
-
-        function toggleSort() {
-            const sortedProducts = [...products].sort((a, b) => 
-                sortAscending ? a.price - b.price : b.price - a.price
-            );
-            sortAscending = !sortAscending;
-            renderProducts(sortedProducts);
-        }
-
-        function addToCart(productId) {
-            const product = products.find(p => p.id === productId);
-            cart.push(product);
-            saveCart();
-            Telegram.WebApp.showPopup({message: 'Товар добавлен в корзину'});
-        }
-
-        function loadCart() {
-            const savedCart = localStorage.getItem('parfumCart');
-            if (savedCart) {
-                cart = JSON.parse(savedCart);
-            }
-        }
-
-        function saveCart() {
-            localStorage.setItem('parfumCart', JSON.stringify(cart));
-        }
-
-        function showPage(pageId) {
-            document.querySelectorAll('.page').forEach(page => {
-                page.classList.remove('active');
-            });
-            document.getElementById(pageId).classList.add('active');
-            
-            if (pageId === 'cart-page') {
-                renderCart();
-            }
-        }
-
-        function renderCart() {
-            const container = document.getElementById('cart-container');
-            container.innerHTML = '';
-            
-            cart.forEach(item => {
-                const cartItem = document.createElement('div');
-                cartItem.className = 'cart-item';
-                cartItem.innerHTML = `
-                    <h4>${item.name}</h4>
-                    <p>${item.concentration} ${item.volume} мл</p>
-                    <p>$${item.price}</p>
-                    <button class="copy-btn" onclick="copyProductData(${item.id})">
-                        Скопировать данные
-                    </button>
-                `;
-                container.appendChild(cartItem);
-            });
-        }
-
-        function copyProductData(productId) {
-            const product = cart.find(p => p.id === productId);
-            const text = `${product.name} ${product.concentration} ${product.volume}ml - $${product.price}`;
-            navigator.clipboard.writeText(text);
-            Telegram.WebApp.showPopup({message: 'Данные скопированы!'});
-        }
-
-        function processOrder() {
-            const orderText = generateOrderText();
-            Telegram.WebApp.openTelegramLink(`https://t.me/parfumdepo?text=${encodeURIComponent(orderText)}`);
-        }
-
-        function generateOrderText() {
-            let text = "Заказ из ParfumDEPO:\n";
-            cart.forEach(item => {
-                text += `- ${item.name} ${item.concentration} ${item.volume}ml - $${item.price}\n`;
-            });
-            text += `\nИтого: $${cart.reduce((sum, item) => sum + item.price, 0)}`;
-            return text;
-        }
-
-        // Поиск
-        document.getElementById('search-input').addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            const filteredProducts = products.filter(product => 
-                product.name.toLowerCase().includes(searchTerm)
-            );
-            renderProducts(filteredProducts);
+    // Обработчик копирования
+    document.querySelectorAll(".copy-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = +btn.getAttribute("data-id");
+        const item = cart.find(c => c.id === id);
+        if (!item) return;
+        const text = `Товар: ${item.name}\nКонцентрация: ${item.concentration}\nОбъем: ${item.volume}\nЦена: ${item.price} ₽\nКоличество: ${item.quantity}`;
+        navigator.clipboard.writeText(text).then(() => {
+          alert("Данные скопированы в буфер обмена");
         });
-    </script>
+      });
+    });
+  }
+
+  // Кнопка оформления заказа
+  document.getElementById("orderBtn").onclick = () => {
+    const url = "https://t.me/parfumdepo";
+    // Пытаемся через Telegram WebApp открыть чат с менеджером (если поддерживается)
+    if (window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+      window.Telegram.WebApp.openTelegramLink(url);
+    } else {
+      window.open(url, "_blank");
+    }
+  };
+
+  document.getElementById("backBtn").onclick = () => {
+    showMainPage();
+  };
+
+  // Инициализация
+  sortCatalog();
+  renderCatalog();
+
+</script>
+
 </body>
 </html>
