@@ -211,6 +211,17 @@ body {
     gap: 12px;
 }
 
+.cart-scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* Для iOS */
+    padding: 0 16px;
+}
+
+.cart-items {
+    padding-bottom: 20px;
+}
+
 /* Кнопки */
 .btn-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
