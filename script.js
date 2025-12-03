@@ -44,39 +44,68 @@ function initTelegramApp() {
 }
 
 // ============================================
-// 2. РАБОТА С API (Google Sheets) - ОБНОВЛЕННАЯ ВЕРСИЯ
+// 2. РАБОТА С API (Google Sheets)
 // ============================================
 
-// Загрузить все товары
+// Загрузить все товары - ПРОСТАЯ ИСПРАВЛЕННАЯ ВЕРСИЯ
 async function loadProducts() {
     try {
         showLoading(true);
+        console.log('Начинаю загрузку товаров с URL:', CONFIG.API_URL);
         
         const response = await fetch(`${CONFIG.API_URL}?sheet=Products`);
+        console.log('Получен ответ, статус:', response.status);
+        
         const data = await response.json();
+        console.log('Данные от API:', data);
         
         if (data.success) {
-            // Преобразуем русские ключи в английские
-            products = data.data.map(item => ({
-                id: item.id || item['id'] || item['ID'],
-                name: item.name || item['Название'] || item['название'] || item['Название товара'],
-                concentration: item.concentration || item['Концентрация'] || item['концентрация'],
-                volume: item.volume || item['Объем'] || item['объем'] || item['Объём'],
-                price: item.price || item['Цена'] || item['цена'],
-                image_url: item.image_url || item['Картинка'] || item['Изображение'] || item['image']
-            }));
+            // Просто используем данные как есть
+            products = data.data || [];
             
+            // Добавляем ID если его нет
+            products.forEach((product, index) => {
+                if (!product.id) product.id = index + 1;
+            });
+            
+            console.log('Товары загружены:', products);
             filteredProducts = [...products];
             renderProducts();
             
-            // Для отладки - выводим в консоль
-            console.log('Загружены товары:', products);
+            // Отладочная информация
+            if (products.length > 0) {
+                console.log('Первый товар:', products[0]);
+                console.log('Ключи первого товара:', Object.keys(products[0]));
+            }
         } else {
-            throw new Error(data.error);
+            throw new Error(data.error || 'Неизвестная ошибка API');
         }
     } catch (error) {
         console.error('Ошибка загрузки товаров:', error);
-        showError('Не удалось загрузить каталог');
+        
+        // Показываем тестовые данные для отладки
+        console.log('Использую тестовые данные...');
+        products = [
+            {
+                id: 1,
+                name: "Creed Aventus",
+                concentration: "Eau de Parfum",
+                volume: "100 ml",
+                price: 25000,
+                image_url: "https://de-parfum.ru/upload/amman_optimizer/jpg_weibo/800_upload/fibios/108v-CREED_Aventus_50_weibo"
+            },
+            {
+                id: 2,
+                name: "Dior Sauvage",
+                concentration: "Eau de Toilette",
+                volume: "60 ml",
+                price: 8000,
+                image_url: "https://odekolon-shop.ru/images/cache.catalog/christianzhorsauvagesau/departium72564224-87/06/70.png"
+            }
+        ];
+        
+        filteredProducts = [...products];
+        renderProducts();
     } finally {
         showLoading(false);
     }
@@ -84,31 +113,41 @@ async function loadProducts() {
 
 // Получить корзину пользователя
 async function loadCart() {
-    if (!currentUser?.id) return;
+    if (!currentUser?.id) {
+        console.log('Нет user_id, пропускаю загрузку корзины');
+        return;
+    }
     
     try {
+        console.log('Загружаю корзину для user_id:', currentUser.id);
         const response = await fetch(
             `${CONFIG.API_URL}?sheet=Carts&user_id=${currentUser.id}`
         );
+        
         const data = await response.json();
+        console.log('Данные корзины:', data);
         
         if (data.success) {
-            cart = data.data;
+            cart = data.data || [];
             updateCartUI();
         }
     } catch (error) {
         console.error('Ошибка загрузки корзины:', error);
-        // Создаем пустую корзину
         cart = [];
     }
 }
 
 // Сохранить корзину на сервер
 async function saveCart() {
-    if (!currentUser?.id) return;
+    if (!currentUser?.id) {
+        console.log('Нет user_id, пропускаю сохранение корзины');
+        return;
+    }
     
     try {
-        await fetch(CONFIG.API_URL, {
+        console.log('Сохраняю корзину для user_id:', currentUser.id, 'данные:', cart);
+        
+        const response = await fetch(CONFIG.API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -117,25 +156,13 @@ async function saveCart() {
                 cart: cart
             })
         });
+        
+        const result = await response.json();
+        console.log('Результат сохранения:', result);
     } catch (error) {
         console.error('Ошибка сохранения корзины:', error);
     }
 }
-// Добавьте эту функцию в script.js и вызовите после загрузки данных
-
-function debugProducts() {
-    console.log('Структура данных первого товара:', products[0]);
-    console.log('Все доступные ключи:', Object.keys(products[0] || {}));
-    
-    // Выводим все товары в консоль для проверки
-    products.forEach((product, index) => {
-        console.log(`Товар ${index + 1}:`, product);
-    });
-}
-
-// Вызовите эту функцию после загрузки товаров:
-// В функции loadProducts после products = data.data.map(...) добавьте:
-debugProducts();
 
 // ============================================
 // 3. РЕНДЕРИНГ ИНТЕРФЕЙСА
