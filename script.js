@@ -44,7 +44,7 @@ function initTelegramApp() {
 }
 
 // ============================================
-// 2. РАБОТА С API (Google Sheets)
+// 2. РАБОТА С API (Google Sheets) - ОБНОВЛЕННАЯ ВЕРСИЯ
 // ============================================
 
 // Загрузить все товары
@@ -56,9 +56,21 @@ async function loadProducts() {
         const data = await response.json();
         
         if (data.success) {
-            products = data.data;
+            // Преобразуем русские ключи в английские
+            products = data.data.map(item => ({
+                id: item.id || item['id'] || item['ID'],
+                name: item.name || item['Название'] || item['название'] || item['Название товара'],
+                concentration: item.concentration || item['Концентрация'] || item['концентрация'],
+                volume: item.volume || item['Объем'] || item['объем'] || item['Объём'],
+                price: item.price || item['Цена'] || item['цена'],
+                image_url: item.image_url || item['Картинка'] || item['Изображение'] || item['image']
+            }));
+            
             filteredProducts = [...products];
             renderProducts();
+            
+            // Для отладки - выводим в консоль
+            console.log('Загружены товары:', products);
         } else {
             throw new Error(data.error);
         }
@@ -70,7 +82,7 @@ async function loadProducts() {
     }
 }
 
-// Загрузить корзину пользователя
+// Получить корзину пользователя
 async function loadCart() {
     if (!currentUser?.id) return;
     
