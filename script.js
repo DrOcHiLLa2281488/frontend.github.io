@@ -36,33 +36,62 @@ function initTelegramApp() {
 }
 
 // ============================================
-// 2. РАБОТА С API
+// 2. РАБОТА С API (с пагинацией)
 // ============================================
+
+// Размер страницы для загрузки товаров (можно настроить)
+const PAGE_SIZE = 50;
+
 async function loadProducts() {
     try {
         console.log('Загрузка товаров...');
-        const response = await fetch(`${CONFIG.API_URL}?sheet=Products`);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+
+        // 1. Получаем общее количество товаров
+        const totalRes = await fetch(`${CONFIG.API_URL}?action=getTotalProducts`);
+        if (!totalRes.ok) throw new Error(`HTTP error! status: ${totalRes.status}`);
+        const totalData = await totalRes.json();
+
+        if (!totalData.success) {
+            throw new Error(totalData.error || 'Не удалось получить количество товаров');
         }
-        
-        const text = await response.text();
-        console.log('Получен текст:', text.substring(0, 200));
-        
-        const data = JSON.parse(text);
-        console.log('Данные:', data);
-        
-        if (data.success) {
-            products = data.data;
-            filteredProducts = [...products];
-            renderProducts();
-        } else {
-            throw new Error(data.error || 'Unknown error');
+
+        const totalProducts = totalData.total;
+        console.log(`Всего товаров: ${totalProducts}`);
+
+        // 2. Загружаем все страницы последовательно
+        let allProducts = [];
+        let page = 1;
+        let loaded = 0;
+
+        while (loaded < totalProducts) {
+            console.log(`Загрузка страницы ${page}...`);
+            const pageRes = await fetch(
+                `${CONFIG.API_URL}?action=getProductsPage&page=${page}&pageSize=${PAGE_SIZE}`
+            );
+            if (!pageRes.ok) throw new Error(`HTTP error! status: ${pageRes.status}`);
+            const pageData = await pageRes.json();
+
+            if (!pageData.success) {
+                throw new Error(pageData.error || `Ошибка загрузки страницы ${page}`);
+            }
+
+            const pageProducts = pageData.data || [];
+            allProducts = allProducts.concat(pageProducts);
+            loaded += pageProducts.length;
+            page++;
+
+            // Можно добавить небольшой индикатор загрузки в консоль
+            console.log(`Загружено ${loaded} из ${totalProducts}`);
         }
+
+        console.log('Все товары загружены:', allProducts);
+        products = allProducts;
+        filteredProducts = [...products];
+        renderProducts();
+
     } catch (error) {
         console.error('Ошибка загрузки товаров:', error);
-        // Показываем тестовые данные
+        // Показываем тестовые данные при ошибке
         products = [
             {
                 id: 1,
@@ -79,6 +108,7 @@ async function loadProducts() {
     }
 }
 
+// Функции корзины остаются без изменений
 async function loadCart() {
     if (!currentUser?.id) return;
     
@@ -113,7 +143,6 @@ async function saveCart() {
         console.error('Ошибка сохранения корзины:', error);
     }
 }
-
 // ============================================
 // 3. РЕНДЕРИНГ
 // ============================================
