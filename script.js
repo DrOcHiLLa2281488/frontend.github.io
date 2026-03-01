@@ -2,7 +2,7 @@
 // КОНФИГУРАЦИЯ
 // ============================================
 const CONFIG = {
-    API_URL: 'https://script.google.com/macros/s/AKfycbwC2rYV5q4zOyZ7EVoAzQIwigeTAi9bTelTYQ8cmdb_A7CMkJIkT2ajZNFF-fl9YxVjeQ/exec',
+    API_URL: 'https://script.google.com/macros/s/AKfycbxfmFNrzgnXFkdNUAeW_gilpN_L_LdNHuK79CXgtzNfSl_9soMMEht5VgwOc7t8vK1-ww/exec',
     MANAGER_USERNAME: '@parfumdepo'
 };
 
