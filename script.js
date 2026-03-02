@@ -21,18 +21,23 @@ let currentQuantity = 1;
 // ============================================
 // 1. ИНИЦИАЛИЗАЦИЯ TELEGRAM MINI APP
 // ============================================
-function initTelegramApp() {
-    TelegramWebApp = window.Telegram.WebApp;
-    TelegramWebApp.expand();
-    currentUser = TelegramWebApp.initDataUnsafe.user;
-    
-    console.log('Пользователь:', currentUser);
-    console.log('API URL:', CONFIG.API_URL);
-    
-    loadProducts();
-    loadCart();
-    setupEventListeners();
-    showShopPage();
+async function initTelegramApp() {
+    try {
+        TelegramWebApp = window.Telegram.WebApp;
+        TelegramWebApp.expand();
+        currentUser = TelegramWebApp.initDataUnsafe.user;
+        console.log('Пользователь:', currentUser);
+        console.log('API URL:', CONFIG.API_URL);
+
+        await setupAdminFeatures(); // проверка прав админа
+
+        loadProducts();
+        loadCart();
+        setupEventListeners();
+        showShopPage();
+    } catch (error) {
+        console.error('Ошибка инициализации:', error);
+    }
 }
 
 // ============================================
@@ -42,17 +47,17 @@ async function loadProducts() {
     try {
         console.log('Загрузка товаров...');
         const response = await fetch(`${CONFIG.API_URL}?sheet=Products`);
-        
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const text = await response.text();
         console.log('Получен текст:', text.substring(0, 200));
-        
+
         const data = JSON.parse(text);
         console.log('Данные:', data);
-        
+
         if (data.success) {
             products = data.data;
             filteredProducts = [...products];
@@ -81,11 +86,11 @@ async function loadProducts() {
 
 async function loadCart() {
     if (!currentUser?.id) return;
-    
+
     try {
         const response = await fetch(`${CONFIG.API_URL}?sheet=Carts&user_id=${currentUser.id}`);
         const data = await response.json();
-        
+
         if (data.success) {
             cart = data.data;
             updateCartUI();
@@ -98,7 +103,7 @@ async function loadCart() {
 
 async function saveCart() {
     if (!currentUser?.id) return;
-    
+
     try {
         await fetch(CONFIG.API_URL, {
             method: 'POST',
@@ -119,7 +124,7 @@ async function saveCart() {
 // ============================================
 function renderProducts() {
     const container = document.getElementById('catalog');
-    
+
     if (filteredProducts.length === 0) {
         container.innerHTML = `
             <div class="empty-cart">
@@ -129,7 +134,7 @@ function renderProducts() {
         `;
         return;
     }
-    
+
     container.innerHTML = filteredProducts.map(product => `
         <div class="product-card" data-id="${product.id}">
             <img src="${product.image_url || 'https://via.placeholder.com/300x200?text=No+Image'}" 
@@ -146,27 +151,36 @@ function renderProducts() {
             </div>
         </div>
     `).join('');
-    
-    document.querySelectorAll('.product-card').forEach(card => {
-        card.addEventListener('click', () => {
-            const productId = parseInt(card.dataset.id);
-            const product = products.find(p => p.id === productId);
-            if (product) openProductModal(product);
-        });
-    });
+
+    // Обработчики больше не назначаются вручную – используется делегирование
+}
+
+// Функция-обработчик клика по карточкам (делегирование)
+function catalogClickHandler(e) {
+    const card = e.target.closest('.product-card');
+    if (!card) return;
+    const productId = card.dataset.id; // оставляем как строку
+    console.log('Клик, ID:', productId);
+    const product = products.find(p => p.id == productId); // нестрогое сравнение
+    if (product) {
+        openProductModal(product);
+    } else {
+        console.warn('Товар не найден! ID:', productId);
+        console.log('Все ID товаров:', products.map(p => p.id));
+    }
 }
 
 function openProductModal(product) {
     currentModalProduct = product;
     currentQuantity = 1;
-    
+
     document.getElementById('modalImage').src = product.image_url || 'https://via.placeholder.com/300x200?text=No+Image';
     document.getElementById('modalName').textContent = product.name;
     document.getElementById('modalConcentration').textContent = product.concentration;
     document.getElementById('modalVolume').textContent = product.volume;
     document.getElementById('modalPrice').textContent = formatPrice(product.price) + ' ₽';
     document.getElementById('currentQty').textContent = currentQuantity;
-    
+
     document.getElementById('productModal').style.display = 'flex';
 }
 
@@ -178,9 +192,9 @@ function closeProductModal() {
 function updateCartUI() {
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
     document.getElementById('cartCount').textContent = totalItems;
-    
+
     const container = document.getElementById('cartItems');
-    
+
     if (cart.length === 0) {
         container.innerHTML = `
             <div class="empty-cart">
@@ -190,13 +204,13 @@ function updateCartUI() {
         `;
         return;
     }
-    
+
     container.innerHTML = cart.map(item => {
-        const product = products.find(p => p.id === item.id);
+        const product = products.find(p => p.id == item.id); // нестрогое сравнение
         if (!product) return '';
-        
+
         const total = product.price * item.quantity;
-        
+
         return `
             <div class="cart-item" data-id="${product.id}">
                 <div class="cart-item-info">
@@ -227,9 +241,9 @@ function updateCartUI() {
 // ============================================
 function addToCart() {
     if (!currentModalProduct) return;
-    
-    const existingItem = cart.find(item => item.id === currentModalProduct.id);
-    
+
+    const existingItem = cart.find(item => item.id == currentModalProduct.id); // нестрогое
+
     if (existingItem) {
         existingItem.quantity += currentQuantity;
     } else {
@@ -238,7 +252,7 @@ function addToCart() {
             quantity: currentQuantity
         });
     }
-    
+
     saveCart();
     updateCartUI();
     closeProductModal();
@@ -246,22 +260,22 @@ function addToCart() {
 }
 
 function removeFromCart(productId) {
-    cart = cart.filter(item => item.id !== productId);
+    cart = cart.filter(item => item.id != productId); // нестрогое
     saveCart();
     updateCartUI();
 }
 
 function copyProductData(productId) {
-    const product = products.find(p => p.id == productId); // нестрогое равенство
+    const product = products.find(p => p.id == productId);
     if (!product) return;
-    
+
     const text = `
 ${product.name}
 Концентрация: ${product.concentration}
 Объем: ${product.volume}
 Цена: ${formatPrice(product.price)} ₽
     `.trim();
-    
+
     navigator.clipboard.writeText(text)
         .then(() => showNotification('Данные скопированы!'))
         .catch(() => showNotification('Ошибка копирования'));
@@ -272,17 +286,17 @@ function copyAllOrder() {
         showNotification('Корзина пуста!');
         return;
     }
-    
+
     let text = `ЗАКАЗ #${Date.now()}\n\n`;
     let total = 0;
-    
+
     cart.forEach(item => {
-        const product = products.find(p => p.id === item.id);
+        const product = products.find(p => p.id == item.id);
         if (!product) return;
-        
+
         const itemTotal = product.price * item.quantity;
         total += itemTotal;
-        
+
         text += `
 ${product.name}
 ${product.concentration} • ${product.volume}
@@ -290,10 +304,10 @@ ${item.quantity} × ${formatPrice(product.price)} ₽ = ${formatPrice(itemTotal)
 -------------------------
         `.trim() + '\n';
     });
-    
+
     text += `\nИТОГО: ${formatPrice(total)} ₽`;
     text += `\n\nПользователь: ${currentUser?.first_name || 'Неизвестно'}`;
-    
+
     navigator.clipboard.writeText(text)
         .then(() => showNotification('Весь заказ скопирован!'))
         .catch(() => showNotification('Ошибка копирования'));
@@ -304,7 +318,7 @@ function checkout() {
         showNotification('Добавьте товары в корзину!');
         return;
     }
-    
+
     saveCart();
     const url = `https://t.me/${CONFIG.MANAGER_USERNAME.replace('@', '')}?start=${currentUser?.id || '0'}`;
     TelegramWebApp.openTelegramLink(url);
@@ -315,7 +329,7 @@ function checkout() {
 // ============================================
 function searchProducts(query) {
     const searchTerm = query.toLowerCase().trim();
-    
+
     if (!searchTerm) {
         filteredProducts = [...products];
     } else {
@@ -324,7 +338,7 @@ function searchProducts(query) {
             product.concentration.toLowerCase().includes(searchTerm)
         );
     }
-    
+
     sortProducts();
 }
 
@@ -332,23 +346,13 @@ function sortProducts() {
     filteredProducts.sort((a, b) => {
         const priceA = parseFloat(a.price) || 0;
         const priceB = parseFloat(b.price) || 0;
-        
         return sortDirection === 'asc' ? priceA - priceB : priceB - priceA;
     });
-    
-    renderProducts();
-    
-    // Удаляем старый цикл forEach и вместо него:
-const container = document.getElementById('catalog');
-container.removeEventListener('click', catalogClickHandler); // убрать предыдущий, если был
-container.addEventListener('click', catalogClickHandler);
 
-function catalogClickHandler(e) {
-    const card = e.target.closest('.product-card');
-    if (!card) return;
-    const productId = card.dataset.id; // оставляем как строку
-    const product = products.find(p => p.id == productId); // нестрогое сравнение
-    if (product) openProductModal(product);
+    renderProducts();
+
+    const btn = document.getElementById('sortButton');
+    btn.textContent = `Фильтр: По цене ${sortDirection === 'asc' ? '↑' : '↓'}`;
 }
 
 function toggleSort() {
@@ -396,63 +400,52 @@ function setupEventListeners() {
     document.getElementById('searchInput').addEventListener('input', (e) => {
         searchProducts(e.target.value);
     });
-    
+
     // Сортировка
     document.getElementById('sortButton').addEventListener('click', toggleSort);
-    
+
     // Модальное окно
     document.getElementById('increaseQty').addEventListener('click', () => {
         currentQuantity++;
         document.getElementById('currentQty').textContent = currentQuantity;
     });
-    
+
     document.getElementById('decreaseQty').addEventListener('click', () => {
         if (currentQuantity > 1) {
             currentQuantity--;
             document.getElementById('currentQty').textContent = currentQuantity;
         }
     });
-    
+
     document.getElementById('addToCartBtn').addEventListener('click', addToCart);
     document.getElementById('closeModal').addEventListener('click', closeProductModal);
-    
+
     document.getElementById('productModal').addEventListener('click', (e) => {
         if (e.target.id === 'productModal') closeProductModal();
     });
-    
+
     // Навигация
     document.getElementById('shopTab').addEventListener('click', showShopPage);
     document.getElementById('cartTab').addEventListener('click', showCartPage);
     document.getElementById('backToShop').addEventListener('click', showShopPage);
-    
+
     // Корзина
     document.getElementById('copyAllBtn').addEventListener('click', copyAllOrder);
     document.getElementById('checkoutBtn').addEventListener('click', checkout);
+
+    // ДЕЛЕГИРОВАНИЕ КЛИКА ПО КАРТОЧКАМ
+    const catalog = document.getElementById('catalog');
+    if (catalog) {
+        catalog.addEventListener('click', catalogClickHandler);
+    }
 }
 
 // ============================================
-// 9. ЗАПУСК ПРИЛОЖЕНИЯ
+// 9. АДМИН-ФУНКЦИИ
 // ============================================
-document.addEventListener('DOMContentLoaded', () => {
-    if (window.Telegram?.WebApp) {
-        initTelegramApp();
-    } else {
-        console.log('Режим разработки');
-        currentUser = { id: 99999, first_name: 'Тест' };
-        loadProducts();
-        setupEventListeners();
-        showShopPage();
-    }
-});
-
-// ============================================
-// ДОПОЛНИТЕЛЬНАЯ ФУНКЦИЯ В script.js
-// ============================================
-
-// Добавьте в функцию initTelegramApp():
 async function checkAdminStatus() {
     if (!currentUser?.id) return false;
-    
+
     try {
         const response = await fetch(`${CONFIG.API_URL}?action=CHECK_ADMIN&user_id=${currentUser.id}`);
         const data = await response.json();
@@ -463,12 +456,10 @@ async function checkAdminStatus() {
     }
 }
 
-// Можно добавить кнопку админа в интерфейс
 async function setupAdminFeatures() {
     const isAdmin = await checkAdminStatus();
-    
+
     if (isAdmin) {
-        // Добавляем скрытую кнопку админа
         const adminBtn = document.createElement('button');
         adminBtn.className = 'admin-btn';
         adminBtn.innerHTML = '⚙️ Админ';
@@ -482,32 +473,31 @@ async function setupAdminFeatures() {
         adminBtn.style.border = 'none';
         adminBtn.style.borderRadius = '20px';
         adminBtn.style.cursor = 'pointer';
-        
+
         adminBtn.addEventListener('click', () => {
-            TelegramWebApp.openTelegramLink(`https://t.me/${bot_username}?start=admin`);
+            // Используем MANAGER_USERNAME из конфига
+            TelegramWebApp.openTelegramLink(`https://t.me/${CONFIG.MANAGER_USERNAME.replace('@', '')}?start=admin`);
         });
-        
+
         document.body.appendChild(adminBtn);
     }
 }
 
-// И вызовите в initTelegramApp():
-async function initTelegramApp() {
-    TelegramWebApp = window.Telegram.WebApp;
-    TelegramWebApp.expand();
-    currentUser = TelegramWebApp.initDataUnsafe.user;
-    
-    console.log('Пользователь:', currentUser);
-    
-    // Проверяем админ-права
-    await setupAdminFeatures();
-    
-    loadProducts();
-    loadCart();
-    setupEventListeners();
-    showShopPage();
-}
+// ============================================
+// 10. ЗАПУСК ПРИЛОЖЕНИЯ
+// ============================================
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.Telegram?.WebApp) {
+        initTelegramApp();
+    } else {
+        console.log('Режим разработки');
+        currentUser = { id: 99999, first_name: 'Тест' };
+        loadProducts();
+        setupEventListeners();
+        showShopPage();
+    }
+});
 
-// Убедитесь, что функции доступны глобально
+// Экспорт функций в глобальную область (для onclick в корзине)
 window.copyProductData = copyProductData;
 window.removeFromCart = removeFromCart;
