@@ -338,8 +338,17 @@ function sortProducts() {
     
     renderProducts();
     
-    const btn = document.getElementById('sortButton');
-    btn.textContent = `Фильтр: По цене ${sortDirection === 'asc' ? '↑' : '↓'}`;
+    // Удаляем старый цикл forEach и вместо него:
+const container = document.getElementById('catalog');
+container.removeEventListener('click', catalogClickHandler); // убрать предыдущий, если был
+container.addEventListener('click', catalogClickHandler);
+
+function catalogClickHandler(e) {
+    const card = e.target.closest('.product-card');
+    if (!card) return;
+    const productId = card.dataset.id; // оставляем как строку
+    const product = products.find(p => p.id == productId); // нестрогое сравнение
+    if (product) openProductModal(product);
 }
 
 function toggleSort() {
