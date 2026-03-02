@@ -252,7 +252,7 @@ function removeFromCart(productId) {
 }
 
 function copyProductData(productId) {
-    const product = products.find(p => p.id === productId);
+    const product = products.find(p => p.id == productId); // нестрогое равенство
     if (!product) return;
     
     const text = `
